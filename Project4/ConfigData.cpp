@@ -109,8 +109,8 @@ void ConfigData::fileReadIn ( string configFileName )
          keyVal = "path";
 
       //Debug
-      cout << "Key: " << keyVal << "\n";
-      cout << "Data: " << data << "\n";
+      //cout << "Key: " << keyVal << "\n";
+      //cout << "Data: " << data << "\n";
 
       //Insert into map
       configMap.insert ( pair<string , string> ( keyVal , data ) );

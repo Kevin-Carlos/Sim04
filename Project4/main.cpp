@@ -35,11 +35,11 @@ int main ( int argc , char *argv [ ] )
    myConfig.fileReadIn ( argv [ 1 ] );
 
    //Read in metaData file
-   //myMeta.metaFileReadIn ( myConfig.getMetaFile ( ) );
+   myMeta.metaFileReadIn ( myConfig.getMetaFile ( ) );
 
    //Need to pass give Simulator both my configMap and the queues in meta
    //sim.getMetaData ( myMeta );
-   //sim.runSim ( myMeta , myConfig );
+   sim.runSim ( myMeta , myConfig );
 
 
 
