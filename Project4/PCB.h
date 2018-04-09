@@ -55,6 +55,7 @@ public:
 
    vector<Data> dataVec;
    vector<Data>::iterator processIndex;
+   vector<Data>::iterator jobIndex;
 
 private:
    int processState;

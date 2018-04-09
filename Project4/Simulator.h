@@ -50,6 +50,8 @@ public:
             projMax ,
             projQuantity = 0 ,
             schedAlg ,
+            processCount = 0 ,
+            newProcessCount = 0 ,
             count = 0;
 
    std::string processType;

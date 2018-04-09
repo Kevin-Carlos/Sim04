@@ -72,12 +72,53 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
    {
       //FIFO
    case 0:
+
+      //Set the index to the beginning since its FIFO
       PCBobj.processIndex = PCBobj.dataVec.begin();
       processData ( myMeta , myConfig );
       break;
 
       //PS
    case 1:
+      
+      //Run in a loop until the vector is empty
+      
+      //Find the application with the most number of I/O
+      for ( 
+         PCBobj.processIndex = PCBobj.dataVec.begin(); 
+         PCBobj.processIndex != PCBobj.dataVec.end(); 
+         ++PCBobj.processIndex )
+      {
+         //Find A{begin}
+         //Need to save the corresponding A{begin} index
+         if ( PCBobj.processIndex->code == 'A'
+            && PCBobj.processIndex->key == "begin" )
+         {
+            //Save the index
+            PCBobj.jobIndex = PCBobj.processIndex;
+
+            //Run until A{finish}
+            while ( PCBobj.processIndex->code == 'A'
+               && PCBobj.processIndex->key == "finish" )
+            {
+               ++PCBobj.processIndex; //Need to go to the next index
+
+               //Only update the process count if its an I/O operation
+               if ( PCBobj.processIndex->code == 'I' 
+                  || PCBobj.processIndex->code == 'O' )
+                  newProcessCount++; //Update process count
+            }
+            
+            //Compare to other counted processes
+            if ( newProcessCount > processCount )
+            {
+               processCount = newProcessCount;
+
+               //Save the iterator position of the highest I/O application
+               PCBobj.jobIndex = PCBobj.processIndex;
+            }
+         }
+      }
       break;
 
       //SJF
@@ -315,11 +356,11 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
 
       if ( DEBUG == 1 )
       {
-         cout << "Code: " << PCBobj.dataVec [ i ].code << "\n";
-         cout << "Key: " << PCBobj.dataVec [ i ].key << "\n";
-         cout << "ConfigTime: " << PCBobj.dataVec [ i ].configTime << "\n";
-         cout << "MetaTime: " << PCBobj.dataVec [ i ].metaTime << "\n";
-         cout << "ProcessTime: " << PCBobj.dataVec [ i ].processTime << "\n";
+         cout << "Code: " << PCBobj.processIndex->code << "\n";
+         cout << "Key: " << PCBobj.processIndex->key << "\n";
+         cout << "ConfigTime: " << PCBobj.processIndex->configTime << "\n";
+         cout << "MetaTime: " << PCBobj.processIndex->metaTime << "\n";
+         cout << "ProcessTime: " << PCBobj.processIndex->processTime << "\n";
       }
    }
 }
