@@ -60,18 +60,38 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
    *
    */
    //Debug run thru the vector
-   for ( int i = 0 , size = PCBobj.dataVec.size ( ); i < size; ++i )
+   /*for ( int i = 0 , size = PCBobj.dataVec.size ( ); i < size; ++i )
    {
       cout << "Code: " << PCBobj.dataVec [ i ].code << "\n";
       cout << "Key: " << PCBobj.dataVec [ i ].key << "\n";
       cout << "ConfigTime: " << PCBobj.dataVec [ i ].configTime << "\n";
       cout << "MetaTime: " << PCBobj.dataVec [ i ].metaTime << "\n";
       cout << "ProcessTime: " << PCBobj.dataVec [ i ].processTime << "\n";
+   }*/
+   switch ( schedAlg )
+   {
+      //FIFO
+   case 0:
+      PCBobj.processIndex = PCBobj.dataVec.begin();
+      processData ( myMeta , myConfig );
+      break;
+
+      //PS
+   case 1:
+      break;
+
+      //SJF
+   case 2:
+      break;
+
+   default:
+      cout << "Error with switch code for scheduling algorithm...\n";
+      break;
    }
 
 }
 
-void Simulator::processData ( MetaData& , ConfigData& )
+void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
 {
    //Variables
    const string   BEGIN = "begin";
@@ -81,23 +101,23 @@ void Simulator::processData ( MetaData& , ConfigData& )
    const string   PROJ = "PROJ";
    string         temp;
    int            flag = 0 ,
-      num;
+                  num;
    bool           allocation;
 
    while ( !PCBobj.dataVec.empty ( ) )
    {
 
-      switch ( PCBobj.dataVec.front ( ).code )
+      switch ( PCBobj.processIndex->code )
       {
 
       case 'S':
 
-         if ( PCBobj.dataVec.front ( ).key == BEGIN )
+         if ( PCBobj.processIndex->key == BEGIN )
          {
             stream = " - Simulator program starting";
             log.output ( stream );
          }
-         else if ( PCBobj.dataVec.front ( ).key == FINISH )
+         else if ( PCBobj.processIndex->key == FINISH )
          {
             stream = " - Simulator program ending";
             log.output ( stream );
@@ -106,7 +126,7 @@ void Simulator::processData ( MetaData& , ConfigData& )
 
       case 'A':
 
-         if ( PCBobj.dataVec.front ( ).key == BEGIN )
+         if ( PCBobj.processIndex->key == BEGIN )
          {
             //Increment count to say correspond to process
             count++;
@@ -115,7 +135,7 @@ void Simulator::processData ( MetaData& , ConfigData& )
             stream = " - OS: starting process " + to_string ( count );
             log.output ( stream );
          }
-         else if ( PCBobj.dataVec.front ( ).key == FINISH )
+         else if ( PCBobj.processIndex->key == FINISH )
          {
             stream = " - OS: removing process " + to_string ( count );
             log.output ( stream );
@@ -140,9 +160,9 @@ void Simulator::processData ( MetaData& , ConfigData& )
          //Set operation to input
          processType = "input";
 
-         if ( PCBobj.dataVec.front ( ).key == "projector" )
+         if ( PCBobj.processIndex->key == "projector" )
             num = 0;
-         else if ( PCBobj.dataVec.front ( ).key == "hard drive" )
+         else if ( PCBobj.processIndex->key == "hard drive" )
             num = 1;
          else
             num = 100;
@@ -170,14 +190,14 @@ void Simulator::processData ( MetaData& , ConfigData& )
          }
 
          stream = " - Process " + to_string ( count ) + " - start " +
-            PCBobj.dataVec.front ( ).key + " " + processType + temp;
+            PCBobj.processIndex->key + " " + processType + temp;
          log.output ( stream );
 
          //Send this to the PCB to handle
          PCBobj.IOHandler ( );
 
          stream = " - Process " + to_string ( count ) + " - end " +
-            PCBobj.dataVec.front ( ).key + " " + processType;
+            PCBobj.processIndex->key + " " + processType;
          log.output ( stream );
 
          break;
@@ -186,9 +206,9 @@ void Simulator::processData ( MetaData& , ConfigData& )
          //Set operation to input
          processType = "output";
 
-         if ( PCBobj.dataVec.front ( ).key == "projector" )
+         if ( PCBobj.processIndex->key == "projector" )
             num = 0;
-         else if ( PCBobj.dataVec.front ( ).key == "hard drive" )
+         else if ( PCBobj.processIndex->key == "hard drive" )
             num = 1;
          else
             num = 100;
@@ -216,14 +236,14 @@ void Simulator::processData ( MetaData& , ConfigData& )
          }
 
          stream = " - Process " + to_string ( count ) + " - start " +
-            PCBobj.dataVec.front ( ).key + " " + processType + temp;
+            PCBobj.processIndex->key + " " + processType + temp;
          log.output ( stream );
 
          //Send this to the PCB to handle
          PCBobj.IOHandler ( );
 
          stream = " - Process " + to_string ( count ) + " - end " +
-            PCBobj.dataVec.front ( ).key + " " + processType;
+            PCBobj.processIndex->key + " " + processType;
          log.output ( stream );
 
          break;
@@ -231,7 +251,7 @@ void Simulator::processData ( MetaData& , ConfigData& )
       case 'M':
 
          //If memory allocate
-         if ( PCBobj.dataVec.front ( ).key == ALLOCATE )
+         if ( PCBobj.processIndex->key == ALLOCATE )
          {
             stream = " - Process " + to_string ( count ) +
                " - allocating memory";
@@ -291,16 +311,15 @@ void Simulator::processData ( MetaData& , ConfigData& )
       * Need to pop from the necessary index in the vector
       *
       */
-      //PCBobj.dataVec.pop ( );
+      PCBobj.dataVec.erase ( PCBobj.processIndex );
 
       if ( DEBUG == 1 )
       {
-         /*cout << "Code: " << PCBobj.dataQueue.front( ).code << "\n";
-         cout << "Key: " << PCBobj.dataQueue.front ( ).key << "\n";
-         cout << "ConfigTime: " << PCBobj.dataQueue.front( ).configTime << "\n";
-         cout << "MetaTime: " << PCBobj.dataQueue.front( ).metaTime << "\n";
-         cout << "ProcessTime: "
-         << PCBobj.dataQueue.front( ).processTime << "\n";*/
+         cout << "Code: " << PCBobj.dataVec [ i ].code << "\n";
+         cout << "Key: " << PCBobj.dataVec [ i ].key << "\n";
+         cout << "ConfigTime: " << PCBobj.dataVec [ i ].configTime << "\n";
+         cout << "MetaTime: " << PCBobj.dataVec [ i ].metaTime << "\n";
+         cout << "ProcessTime: " << PCBobj.dataVec [ i ].processTime << "\n";
       }
    }
 }
@@ -366,11 +385,11 @@ void Simulator::setScheduler ( MetaData &myMeta , ConfigData myConfig )
 
    //Determine the algorithm used
    if ( temp == "PS" )
-      schedAlg = 1;
+      schedAlg = PS;
    else if ( temp == "SJF" )
-      schedAlg = 2;
+      schedAlg = SJF;
    else
-      schedAlg = 0; //Default it to FIFO if nothing else
+      schedAlg = FIFO; //Default it to FIFO if nothing else
 }
 
 /**

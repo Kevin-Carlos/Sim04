@@ -22,7 +22,6 @@
 #include <ctime>
 #include <chrono>
 
-
 //
 // Preprocessor directives
 //
@@ -39,20 +38,19 @@ class Simulator
 {
 public:
    //Object declarations
-   PCB PCBobj;
-   Logger log;
+   PCB      PCBobj;
+   Logger   log;
 
    //Variables
    int		maxMemory ,
-      blockSize ,
-      address ,
-      HDDQuantity = 0 ,
-      HDDMax ,
-      projMax ,
-      projQuantity = 0 ,
-      schedAlg ,
-      processIndex ,
-      count = 0;
+            blockSize ,
+            address ,
+            HDDQuantity = 0 ,
+            HDDMax ,
+            projMax ,
+            projQuantity = 0 ,
+            schedAlg ,
+            count = 0;
 
    std::string processType;
 

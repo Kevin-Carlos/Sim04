@@ -34,7 +34,7 @@ struct Data {
    string   key;
 
    int      configTime ,
-      metaTime;
+            metaTime;
 
    long     processTime;
 };
@@ -54,6 +54,7 @@ public:
    int getProcessState ( );
 
    vector<Data> dataVec;
+   vector<Data>::iterator processIndex;
 
 private:
    int processState;
