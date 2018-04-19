@@ -26,7 +26,7 @@
 void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
 {
    //Variables
-   size_t size;
+   int exit = 0;
 
    //First create a vector of a struct called Data which holds all relevent info
    setData ( myMeta , myConfig );
@@ -59,66 +59,53 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
    * within at the correct index until the vector is empty.
    *
    */
-   //Debug run thru the vector
-   /*for ( int i = 0 , size = PCBobj.dataVec.size ( ); i < size; ++i )
-   {
-      cout << "Code: " << PCBobj.dataVec [ i ].code << "\n";
-      cout << "Key: " << PCBobj.dataVec [ i ].key << "\n";
-      cout << "ConfigTime: " << PCBobj.dataVec [ i ].configTime << "\n";
-      cout << "MetaTime: " << PCBobj.dataVec [ i ].metaTime << "\n";
-      cout << "ProcessTime: " << PCBobj.dataVec [ i ].processTime << "\n";
-   }*/
    switch ( schedAlg )
    {
       //FIFO
    case 0:
-
       //Set the index to the beginning since its FIFO
-      PCBobj.processIndex = PCBobj.dataVec.begin();
-      processData ( myMeta , myConfig );
+      PCBobj.jobIndex = PCBobj.dataVec.begin();
+      while ( !PCBobj.dataVec.empty ( ) )
+         processData ( myMeta , myConfig );
       break;
 
       //PS
    case 1:
-      
-      //Run in a loop until the vector is empty
-      
-      //Find the application with the most number of I/O
-      for ( 
-         PCBobj.processIndex = PCBobj.dataVec.begin(); 
-         PCBobj.processIndex != PCBobj.dataVec.end(); 
-         ++PCBobj.processIndex )
+      //Initialize vector iterator
+      PCBobj.jobIndex = PCBobj.dataVec.begin ( );
+      //Data is erased within the processing
+      processData ( myMeta , myConfig );
+
+      //While the vector is not empty, process
+      while ( exit == 0 )
       {
-         //Find A{begin}
-         //Need to save the corresponding A{begin} index
-         if ( PCBobj.processIndex->code == 'A'
-            && PCBobj.processIndex->key == "begin" )
+         //Find the application to begin with
+         findApplication ( );
+
+         do
          {
-            //Save the index
-            PCBobj.jobIndex = PCBobj.processIndex;
-
-            //Run until A{finish}
-            while ( PCBobj.processIndex->code == 'A'
-               && PCBobj.processIndex->key == "finish" )
+            if ( DEBUG == 1 )
             {
-               ++PCBobj.processIndex; //Need to go to the next index
-
-               //Only update the process count if its an I/O operation
-               if ( PCBobj.processIndex->code == 'I' 
-                  || PCBobj.processIndex->code == 'O' )
-                  newProcessCount++; //Update process count
+               cout << "Code: " << PCBobj.jobIndex->code << "\n";
+               cout << "Key: " << PCBobj.jobIndex->key << "\n";
+               cout << "ConfigTime: " << PCBobj.jobIndex->configTime << "\n";
+               cout << "MetaTime: " << PCBobj.jobIndex->metaTime << "\n";
+               cout << "ProcessTime: " << PCBobj.jobIndex->processTime << "\n";
             }
-            
-            //Compare to other counted processes
-            if ( newProcessCount > processCount )
-            {
-               processCount = newProcessCount;
 
-               //Save the iterator position of the highest I/O application
-               PCBobj.jobIndex = PCBobj.processIndex;
+            if ( PCBobj.dataVec.size ( ) == 1 ) {
+               exit = 1;
+               break;
             }
-         }
-      }
+            processData ( myMeta , myConfig );
+            PCBobj.endIndex--; 
+         } while ( PCBobj.jobIndex != ( PCBobj.endIndex ) );
+         appCount--;
+
+         processData ( myMeta , myConfig );
+      } 
+      //Process any leftovers
+      //processData ( myMeta , myConfig );
       break;
 
       //SJF
@@ -131,6 +118,76 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
    }
 
 }
+
+void Simulator::findApplication ( )
+{
+   //Variables
+   int noIO = 0;
+
+   //cout << "Finding...\n";
+   //Now that simulation has started, determine which app to run
+   for ( PCBobj.processIndex = PCBobj.dataVec.begin ( );
+      PCBobj.processIndex != PCBobj.dataVec.end ( );
+      PCBobj.processIndex++ )
+   {
+      //If A{begin} save the index
+      if ( PCBobj.processIndex->code == 'A' &&
+         PCBobj.processIndex->key == "begin" ) {
+         PCBobj.tempIndex = PCBobj.processIndex;
+         appCount++;
+         //cout << "Found begin...\n";
+      }
+
+      //If the operation is I/O update count
+      if ( PCBobj.processIndex->code == 'I' ||
+         PCBobj.processIndex->code == 'O' ) {
+         //cout << "Found I/O...\n";
+         newProcessCount++;
+      }
+
+      //If A{finish} save the index
+      if ( PCBobj.processIndex->code == 'A' &&
+         PCBobj.processIndex->key == "finish" )
+      {
+         //cout << "Found finish...\n";
+         PCBobj.temp2Index = PCBobj.processIndex;
+
+         //If a new application is found to have more I/O, update the
+         //correct indices
+         if ( newProcessCount > processCount )
+         {
+            //Set the processCount
+            processCount = newProcessCount;
+
+            //cout << "Process count: " << processCount << "\n";
+            //cout << "NewPRocess Count: " << newProcessCount << "\n";
+
+            //Set the iterators
+            PCBobj.jobIndex = PCBobj.tempIndex;
+            PCBobj.endIndex = PCBobj.temp2Index;
+         }
+
+         if ( newProcessCount == 0 )
+            noIO = 1;
+
+         //Reset the count
+         newProcessCount = 0;
+         //cout << "Reset count...\n";
+      }
+   }
+
+   if ( appCount % 2 != 0 && noIO == 1 )
+   {
+      //cout << "Found no I/O...\n";
+      PCBobj.jobIndex = PCBobj.tempIndex;
+      PCBobj.endIndex = PCBobj.temp2Index;
+      noIO = 0;
+   }
+
+   PCBobj.processIndex = PCBobj.dataVec.begin ( );
+   processCount = 0;
+}
+
 
 void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
 {
@@ -145,224 +202,220 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
                   num;
    bool           allocation;
 
-   while ( !PCBobj.dataVec.empty ( ) )
+   /*if ( DEBUG == 1 )
+   {
+      cout << "Code: " << PCBobj.jobIndex->code << "\n";
+      cout << "Key: " << PCBobj.jobIndex->key << "\n";
+      cout << "ConfigTime: " << PCBobj.jobIndex->configTime << "\n";
+      cout << "MetaTime: " << PCBobj.jobIndex->metaTime << "\n";
+      cout << "ProcessTime: " << PCBobj.jobIndex->processTime << "\n";
+   }*/
+
+   switch ( PCBobj.jobIndex->code )
    {
 
-      switch ( PCBobj.processIndex->code )
+   case 'S':
+
+      if ( PCBobj.jobIndex->key == BEGIN )
       {
+         stream = " - Simulator program starting";
+         log.output ( stream );
+      }
+      else if ( PCBobj.jobIndex->key == FINISH )
+      {
+         stream = " - Simulator program ending";
+         log.output ( stream );
+      }
+      break;
 
-      case 'S':
+   case 'A':
 
-         if ( PCBobj.processIndex->key == BEGIN )
-         {
-            stream = " - Simulator program starting";
-            log.output ( stream );
-         }
-         else if ( PCBobj.processIndex->key == FINISH )
-         {
-            stream = " - Simulator program ending";
-            log.output ( stream );
-         }
+      if ( PCBobj.jobIndex->key == BEGIN )
+      {
+         //Increment count to say correspond to process
+         count++;
+         stream = " - OS: preparing process " + to_string ( count );
+         log.output ( stream );
+         stream = " - OS: starting process " + to_string ( count );
+         log.output ( stream );
+      }
+      else if ( PCBobj.jobIndex->key == FINISH )
+      {
+         stream = " - OS: removing process " + to_string ( count );
+         log.output ( stream );
+      }
+      break;
+
+   case 'P':
+
+      stream = " - Process " + to_string ( count )
+         + " - start processing action";
+      log.output ( stream );
+
+      //Pass to gen handler
+      PCBobj.genHandler ( );
+
+      stream = " - Process " + to_string ( count ) +
+         " - end processing action";
+      log.output ( stream );
+      break;
+
+   case 'I':
+      //Set operation to input
+      processType = "input";
+
+      if ( PCBobj.jobIndex->key == "projector" )
+         num = 0;
+      else if ( PCBobj.jobIndex->key == "hard drive" )
+         num = 1;
+      else
+         num = 100;
+
+      switch ( num )
+      {
+      case 0:
+         if ( projQuantity >= projMax )
+            projQuantity = 0;
+         temp = " on " + PROJ + " " + to_string ( projQuantity );
+         projQuantity++;
          break;
 
-      case 'A':
-
-         if ( PCBobj.processIndex->key == BEGIN )
-         {
-            //Increment count to say correspond to process
-            count++;
-            stream = " - OS: preparing process " + to_string ( count );
-            log.output ( stream );
-            stream = " - OS: starting process " + to_string ( count );
-            log.output ( stream );
-         }
-         else if ( PCBobj.processIndex->key == FINISH )
-         {
-            stream = " - OS: removing process " + to_string ( count );
-            log.output ( stream );
-         }
+      case 1:
+         if ( HDDQuantity >= HDDMax )
+            HDDQuantity = 0;
+         temp = " on " + HDD + " " + to_string ( HDDQuantity );
+         HDDQuantity++;
          break;
 
-      case 'P':
+      default:
+         temp = "";
+         num = 100;
+         break;
+      }
 
-         stream = " - Process " + to_string ( count )
-            + " - start processing action";
+      stream = " - Process " + to_string ( count ) + " - start " +
+         PCBobj.jobIndex->key + " " + processType + temp;
+      log.output ( stream );
+
+      //Send this to the PCB to handle
+      PCBobj.IOHandler ( );
+
+      stream = " - Process " + to_string ( count ) + " - end " +
+         PCBobj.jobIndex->key + " " + processType;
+      log.output ( stream );
+
+      break;
+
+   case 'O':
+      //Set operation to input
+      processType = "output";
+
+      if ( PCBobj.jobIndex->key == "projector" )
+         num = 0;
+      else if ( PCBobj.jobIndex->key == "hard drive" )
+         num = 1;
+      else
+         num = 100;
+
+      switch ( num )
+      {
+      case 0:
+         if ( projQuantity >= projMax )
+            projQuantity = 0;
+         temp = " on " + PROJ + " " + to_string ( projQuantity );
+         projQuantity++;
+         break;
+
+      case 1:
+         if ( HDDQuantity >= HDDMax )
+            HDDQuantity = 0;
+         temp = " on " + HDD + " " + to_string ( HDDQuantity );
+         HDDQuantity++;
+         break;
+
+      default:
+         temp = "";
+         num = 100;
+         break;
+      }
+
+      stream = " - Process " + to_string ( count ) + " - start " +
+         PCBobj.jobIndex->key + " " + processType + temp;
+      log.output ( stream );
+
+      //Send this to the PCB to handle
+      PCBobj.IOHandler ( );
+
+      stream = " - Process " + to_string ( count ) + " - end " +
+         PCBobj.jobIndex->key + " " + processType;
+      log.output ( stream );
+
+      break;
+
+   case 'M':
+
+      //If memory allocate
+      if ( PCBobj.jobIndex->key == ALLOCATE )
+      {
+         stream = " - Process " + to_string ( count ) +
+            " - allocating memory";
+         log.output ( stream );
+
+         //Get the address
+         allocation = getAddress ( flag );
+         flag = 1; //So its not 0 from hereon
+
+         //Pass to gen handler
+         PCBobj.genHandler ( );
+
+         switch ( allocation )
+         {
+
+         case false:
+            stream = " - Process " + to_string ( count ) +
+               " - memory could not be allocated. Max memory size reached.";
+            log.output ( stream );
+            break;
+
+         case true:
+            stream = " - Process " + to_string ( count ) +
+               " - memory allocated at 0x";
+            log.outputMemory ( stream , address );
+            break;
+
+         default:
+            std::cout << "Error occured in allocation switch...\n";
+            break;
+         }
+      }
+      else
+      {
+         stream = " - Process " + to_string ( count ) +
+            " - start memory blocking";
          log.output ( stream );
 
          //Pass to gen handler
          PCBobj.genHandler ( );
 
          stream = " - Process " + to_string ( count ) +
-            " - end processing action";
+            " - end memory blocking";
          log.output ( stream );
-         break;
-
-      case 'I':
-         //Set operation to input
-         processType = "input";
-
-         if ( PCBobj.processIndex->key == "projector" )
-            num = 0;
-         else if ( PCBobj.processIndex->key == "hard drive" )
-            num = 1;
-         else
-            num = 100;
-
-         switch ( num )
-         {
-         case 0:
-            if ( projQuantity >= projMax )
-               projQuantity = 0;
-            temp = " on " + PROJ + " " + to_string ( projQuantity );
-            projQuantity++;
-            break;
-
-         case 1:
-            if ( HDDQuantity >= HDDMax )
-               HDDQuantity = 0;
-            temp = " on " + HDD + " " + to_string ( HDDQuantity );
-            HDDQuantity++;
-            break;
-
-         default:
-            temp = "";
-            num = 100;
-            break;
-         }
-
-         stream = " - Process " + to_string ( count ) + " - start " +
-            PCBobj.processIndex->key + " " + processType + temp;
-         log.output ( stream );
-
-         //Send this to the PCB to handle
-         PCBobj.IOHandler ( );
-
-         stream = " - Process " + to_string ( count ) + " - end " +
-            PCBobj.processIndex->key + " " + processType;
-         log.output ( stream );
-
-         break;
-
-      case 'O':
-         //Set operation to input
-         processType = "output";
-
-         if ( PCBobj.processIndex->key == "projector" )
-            num = 0;
-         else if ( PCBobj.processIndex->key == "hard drive" )
-            num = 1;
-         else
-            num = 100;
-
-         switch ( num )
-         {
-         case 0:
-            if ( projQuantity >= projMax )
-               projQuantity = 0;
-            temp = " on " + PROJ + " " + to_string ( projQuantity );
-            projQuantity++;
-            break;
-
-         case 1:
-            if ( HDDQuantity >= HDDMax )
-               HDDQuantity = 0;
-            temp = " on " + HDD + " " + to_string ( HDDQuantity );
-            HDDQuantity++;
-            break;
-
-         default:
-            temp = "";
-            num = 100;
-            break;
-         }
-
-         stream = " - Process " + to_string ( count ) + " - start " +
-            PCBobj.processIndex->key + " " + processType + temp;
-         log.output ( stream );
-
-         //Send this to the PCB to handle
-         PCBobj.IOHandler ( );
-
-         stream = " - Process " + to_string ( count ) + " - end " +
-            PCBobj.processIndex->key + " " + processType;
-         log.output ( stream );
-
-         break;
-
-      case 'M':
-
-         //If memory allocate
-         if ( PCBobj.processIndex->key == ALLOCATE )
-         {
-            stream = " - Process " + to_string ( count ) +
-               " - allocating memory";
-            log.output ( stream );
-
-            //Get the address
-            allocation = getAddress ( flag );
-            flag = 1; //So its not 0 from hereon
-
-                      //Pass to gen handler
-            PCBobj.genHandler ( );
-
-            switch ( allocation )
-            {
-
-            case false:
-               stream = " - Process " + to_string ( count ) +
-                  " - memory could not be allocated. Max memory size reached.";
-               log.output ( stream );
-               break;
-
-            case true:
-               stream = " - Process " + to_string ( count ) +
-                  " - memory allocated at 0x";
-               log.outputMemory ( stream , address );
-               break;
-
-            default:
-               std::cout << "Error occured in allocation switch...\n";
-               break;
-            }
-         }
-         else
-         {
-            stream = " - Process " + to_string ( count ) +
-               " - start memory blocking";
-            log.output ( stream );
-
-            //Pass to gen handler
-            PCBobj.genHandler ( );
-
-            stream = " - Process " + to_string ( count ) +
-               " - end memory blocking";
-            log.output ( stream );
-         }
-
-         break;
-
-      default:
-
-         cout << "Error with the switch codes...\n";
-         break;
       }
 
-      /**
-      *
-      * Need to pop from the necessary index in the vector
-      *
-      */
-      PCBobj.dataVec.erase ( PCBobj.processIndex );
+      break;
 
-      if ( DEBUG == 1 )
-      {
-         cout << "Code: " << PCBobj.processIndex->code << "\n";
-         cout << "Key: " << PCBobj.processIndex->key << "\n";
-         cout << "ConfigTime: " << PCBobj.processIndex->configTime << "\n";
-         cout << "MetaTime: " << PCBobj.processIndex->metaTime << "\n";
-         cout << "ProcessTime: " << PCBobj.processIndex->processTime << "\n";
-      }
+   default:
+
+      cout << "Error with the processing data switch codes...\n";
+      break;
    }
+
+   /**
+   *
+   * Need to pop from the necessary index in the vector
+   *
+   */
+   PCBobj.dataVec.erase ( PCBobj.jobIndex );
 }
 
 /**
@@ -423,6 +476,7 @@ void Simulator::setScheduler ( MetaData &myMeta , ConfigData myConfig )
    //Grab the data of the key
    it = myConfig.configMap.find ( CPU );
    temp = it->second;
+   temp = temp.substr ( 0 , temp.find ( '\r' ) ); //Get rid of \r
 
    //Determine the algorithm used
    if ( temp == "PS" )
@@ -537,7 +591,7 @@ void Simulator::setData ( MetaData &myMeta , ConfigData &myConfig )
 {
    //Variables
    string   temp ,
-      temp2;
+            temp2;
 
    while ( !myMeta.intQueue.empty ( ) )
    {
@@ -549,12 +603,12 @@ void Simulator::setData ( MetaData &myMeta , ConfigData &myConfig )
       //Set metaKey
       myMeta.stringQueue.pop ( ); //Get it to a key value, not the entire string
       PCBobj.data.key = myMeta.stringQueue.front ( );
-      //std::cout << "DataKey: " << PCBobj.data.key << "\n";
+      //cout << "DataKey: " << PCBobj.data.key << "\n";
       myMeta.stringQueue.pop ( ); //Back to the entire string
 
                                   //Set metaTime
       PCBobj.data.metaTime = myMeta.intQueue.front ( );
-      //std::cout << "MetaTime: " << PCBobj.data.metaTime << "\n";
+      //cout << "MetaTime: " << PCBobj.data.metaTime << "\n";
       myMeta.intQueue.pop ( );
 
       //Set configTime for corresponding metaTime
@@ -574,7 +628,7 @@ void Simulator::setData ( MetaData &myMeta , ConfigData &myConfig )
          temp2 = it->second;
          PCBobj.data.configTime = stoi ( temp2 );
       }
-      //std::cout << "ConfigTime: " << PCBobj.data.configTime << "\n";
+      //cout << "ConfigTime: " << PCBobj.data.configTime << "\n";
       //Set the processTime
       PCBobj.data.processTime = PCBobj.data.configTime * PCBobj.data.metaTime;
       //std::cout << "ProcessTime: " << PCBobj.data.processTime << "\n";

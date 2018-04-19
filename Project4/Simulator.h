@@ -25,14 +25,9 @@
 //
 // Preprocessor directives
 //
-
-
-//Enum scope for scheduling algorithm
-enum Scheduler {
-   FIFO = 0 ,
-   PS = 1 ,
-   SJF = 2
-};
+#define FIFO 0
+#define PS 1
+#define SJF 2
 
 class Simulator
 {
@@ -52,6 +47,7 @@ public:
             schedAlg ,
             processCount = 0 ,
             newProcessCount = 0 ,
+            appCount = 0 ,
             count = 0;
 
    std::string processType;
@@ -70,6 +66,7 @@ public:
    void setMaxMemory ( MetaData& , ConfigData );
    void setQuantities ( MetaData& , ConfigData );
    void getFileAndMethod ( MetaData& , ConfigData );
+   void findApplication ( );
    bool getAddress ( int );
 };
 #endif

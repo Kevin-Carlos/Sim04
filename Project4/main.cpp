@@ -40,7 +40,4 @@ int main ( int argc , char *argv [ ] )
    //Need to pass give Simulator both my configMap and the queues in meta
    //sim.getMetaData ( myMeta );
    sim.runSim ( myMeta , myConfig );
-
-
-
 }

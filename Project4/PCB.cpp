@@ -61,7 +61,7 @@ void PCB::genHandler ( )
 {
    //Set the time
    long time;
-   time = dataVec.front ( ).processTime;
+   time = jobIndex->processTime;
    //std::cout << "Time: " << time << std::endl;
 
    sleep ( ( void* ) time );
@@ -81,7 +81,7 @@ void PCB::IOHandler ( )
 
    //Set the time
    long time;
-   time = dataVec.front ( ).processTime;
+   time = jobIndex->processTime;
 
    //Start the thread 
    pthread_create (
