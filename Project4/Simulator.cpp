@@ -48,8 +48,13 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
    Send Logger class the file path */
    getFileAndMethod ( myMeta , myConfig );
 
+   //Initialize semaphores
+   sem_init ( &PCBobj.HDDSem , 0 , HDDMax );
+   sem_init ( &PCBobj.projSem , 0 , projMax );
+
    //Start logging
    log.initTimer ( );
+   
 
    /**
    * Determine the index to begin with based on the scheduling algorithm.
@@ -80,7 +85,7 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
       while ( exit == 0 )
       {
          //Find the application to begin with
-         findApplication ( );
+         findPrioApplication ( );
 
          do
          {
@@ -110,6 +115,26 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
 
       //SJF
    case 2:
+      //Initialize vector iterator
+      PCBobj.jobIndex = PCBobj.dataVec.begin ( );
+      //Data is erased within the processing
+      processData ( myMeta , myConfig );
+
+      while ( !PCBobj.dataVec.empty ( ) )
+      {
+         //Find the first application to begin with
+         findShortestApp ( );
+
+         do
+         {
+            processData ( myMeta , myConfig );
+            PCBobj.endIndex--;
+         } while ( PCBobj.jobIndex != PCBobj.endIndex + 1);
+         
+         if ( PCBobj.dataVec.size() == 1 )
+            processData ( myMeta , myConfig );
+      }
+
       break;
 
    default:
@@ -119,7 +144,82 @@ void Simulator::runSim ( MetaData &myMeta , ConfigData &myConfig )
 
 }
 
-void Simulator::findApplication ( )
+
+/**
+  * @function findShortestApp
+  *
+  * @details finds the iterator within the vector for the beginning of the 
+  *            application that has the shortest amount of processes
+*/
+
+void Simulator::findShortestApp ( )
+{
+   //Now that simulation has started, determine which app to run
+   for ( PCBobj.processIndex = PCBobj.dataVec.begin ( );
+      PCBobj.processIndex != PCBobj.dataVec.end ( );
+      ++PCBobj.processIndex )
+   {
+      //If A{begin} save the index
+      if ( PCBobj.processIndex->code == 'A' &&
+         PCBobj.processIndex->key == "begin" ) {
+         PCBobj.tempIndex = PCBobj.processIndex;
+         appCount++;
+         //cout << "App count: " << appCount << "\n";
+         //cout << "Found begin...\n";
+      }
+
+      //If the operation is I/O update count
+      if ( PCBobj.processIndex->code == 'I' ||
+         PCBobj.processIndex->code == 'O' || 
+         PCBobj.processIndex->code == 'P' ||
+         PCBobj.processIndex->code == 'M' ) {
+         //cout << "Found process...\n";
+         newProcessCount++;
+      }
+
+      //If A{finish} save the index
+      if ( PCBobj.processIndex->code == 'A' &&
+         PCBobj.processIndex->key == "finish" )
+      {
+         //cout << "Found finish...\n";
+         PCBobj.temp2Index = PCBobj.processIndex;
+
+         //If a new application is found to have less processes
+         //Update the indices
+         //shortProcessCount is initialized to 100 so the first run can 
+         //Correctly update the count
+         if ( newProcessCount < shortProcessCount )
+         {
+            //Set the processCount
+            shortProcessCount = newProcessCount;
+
+            //cout << "Process count: " << shortProcessCount << "\n";
+            //cout << "NewPRocess Count: " << newProcessCount << "\n";
+
+            //Set the iterators
+            PCBobj.jobIndex = PCBobj.tempIndex;
+            PCBobj.endIndex = PCBobj.temp2Index;
+         }
+
+         //Reset the count
+         newProcessCount = 0;
+         //cout << "Reset count...\n";
+      }
+   }
+
+   PCBobj.processIndex = PCBobj.dataVec.begin ( );
+   shortProcessCount = 100;
+}
+
+/**
+  * @function findPrioApplication
+  *
+  * @details finds the iterator within the vector for the beginning of the 
+  *            application that has the most IO processes
+  *
+  * @notes none
+*/
+void Simulator::findPrioApplication ( )
 {
    //Variables
    int noIO = 0;
@@ -128,13 +228,14 @@ void Simulator::findApplication ( )
    //Now that simulation has started, determine which app to run
    for ( PCBobj.processIndex = PCBobj.dataVec.begin ( );
       PCBobj.processIndex != PCBobj.dataVec.end ( );
-      PCBobj.processIndex++ )
+      ++PCBobj.processIndex )
    {
       //If A{begin} save the index
       if ( PCBobj.processIndex->code == 'A' &&
          PCBobj.processIndex->key == "begin" ) {
          PCBobj.tempIndex = PCBobj.processIndex;
          appCount++;
+         //cout << "App count: " << appCount << "\n";
          //cout << "Found begin...\n";
       }
 
@@ -167,7 +268,8 @@ void Simulator::findApplication ( )
             PCBobj.endIndex = PCBobj.temp2Index;
          }
 
-         if ( newProcessCount == 0 )
+         //cout << "Process: " << processCount << "\n";
+         if ( processCount == 0 )
             noIO = 1;
 
          //Reset the count
@@ -198,8 +300,7 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
    const string   HDD = "HDD";
    const string   PROJ = "PROJ";
    string         temp;
-   int            flag = 0 ,
-                  num;
+   int            num;
    bool           allocation;
 
    /*if ( DEBUG == 1 )
@@ -298,7 +399,12 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
       log.output ( stream );
 
       //Send this to the PCB to handle
-      PCBobj.IOHandler ( );
+      if ( PCBobj.jobIndex->key == "hard drive" )
+         PCBobj.HDDHandler ( );
+      else if ( PCBobj.jobIndex->key == "projector" )
+         PCBobj.projHandler ( );
+      else
+         PCBobj.IOHandler ( );
 
       stream = " - Process " + to_string ( count ) + " - end " +
          PCBobj.jobIndex->key + " " + processType;
@@ -344,7 +450,12 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
       log.output ( stream );
 
       //Send this to the PCB to handle
-      PCBobj.IOHandler ( );
+      if ( PCBobj.jobIndex->key == "hard drive" )
+         PCBobj.HDDHandler ( );
+      else if ( PCBobj.jobIndex->key == "projector" )
+         PCBobj.projHandler ( );
+      else
+         PCBobj.IOHandler ( );
 
       stream = " - Process " + to_string ( count ) + " - end " +
          PCBobj.jobIndex->key + " " + processType;
@@ -362,8 +473,7 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
          log.output ( stream );
 
          //Get the address
-         allocation = getAddress ( flag );
-         flag = 1; //So its not 0 from hereon
+         allocation = getAddress ( );
 
          //Pass to gen handler
          PCBobj.genHandler ( );
@@ -429,31 +539,27 @@ void Simulator::processData ( MetaData& myMeta , ConfigData& myConfig )
 *            the current address allocation to be used.
 *
 */
-bool Simulator::getAddress ( int entered )
+bool Simulator::getAddress ( )
 {
    bool allocated;
 
-   switch ( entered )
+   //To set the first address space to 0
+   if ( address == 0 && flag == 0 )
    {
-
-   case false: //So first time called the address is 0
-      address = 0;
       allocated = true;
-      break;
-
-   case true:
+      flag = 1;
+   }
+   
+   //To handle every other time
+   else
+   {
       address += blockSize;
       allocated = true;
       if ( blockSize > maxMemory )
       {
-         address -= blockSize;
-         allocated = false;
+         address = 0;
+         allocated = true;
       }
-      break;
-
-   default:
-      std::cout << "Error in getting the current address...\n";
-      break;
    }
 
    return allocated;

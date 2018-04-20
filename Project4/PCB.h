@@ -25,6 +25,7 @@
 #include <iostream>
 #include <vector>
 #include <pthread.h>
+#include <semaphore.h>
 
 using namespace std;
 
@@ -48,6 +49,8 @@ public:
    //Handle operations
    void genHandler ( );
    void IOHandler ( );
+   void HDDHandler ( );
+   void projHandler ( );
 
    // Process state using the predefined START, Ready, Running, etc for ints
    void setProcessState ( int );
@@ -59,6 +62,9 @@ public:
    vector<Data>::iterator endIndex;
    vector<Data>::iterator tempIndex;
    vector<Data>::iterator temp2Index;
+
+   sem_t HDDSem;
+   sem_t projSem;
 
 private:
    int processState;

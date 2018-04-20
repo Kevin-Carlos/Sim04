@@ -22,8 +22,9 @@
 // Global Thread Variables /////////////////////////////////////////////////////
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+
 /**
-* Sleep thread to handle the how long a thread should take
+  * Sleep thread to handle the how long a thread should take
 */
 void* sleep ( void* param )
 {
@@ -50,6 +51,45 @@ void* sleep ( void* param )
 
    return nullptr;
 }
+
+/**
+  * @function HDDhandler
+  * 
+  * @details this function handles hard drive processes
+*/
+void PCB::HDDHandler ( )
+{
+   //Lock the semaphore
+   sem_wait ( &HDDSem );
+
+   //Start timer
+   long time;
+   time = jobIndex->processTime;
+   sleep ( ( void* ) time );
+
+   //Unlock semaphore
+   sem_post ( &HDDSem );
+}
+
+/**
+  * @function projHandler
+  *
+  * @details this function handles projector processes
+*/
+void PCB::projHandler ( )
+{
+   //Lock the semaphore
+   sem_wait ( &projSem );
+
+   //Start timer
+   long time;
+   time = jobIndex->processTime;
+   sleep ( ( void* ) time );
+
+   //Unlock semaphore
+   sem_post ( &projSem );
+}
+
 
 /**
 * @function genHandler

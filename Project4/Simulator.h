@@ -39,7 +39,8 @@ public:
    //Variables
    int		maxMemory ,
             blockSize ,
-            address ,
+            address = 0 ,
+            flag = 0 ,
             HDDQuantity = 0 ,
             HDDMax ,
             projMax ,
@@ -47,6 +48,7 @@ public:
             schedAlg ,
             processCount = 0 ,
             newProcessCount = 0 ,
+            shortProcessCount = 100 ,
             appCount = 0 ,
             count = 0;
 
@@ -66,7 +68,8 @@ public:
    void setMaxMemory ( MetaData& , ConfigData );
    void setQuantities ( MetaData& , ConfigData );
    void getFileAndMethod ( MetaData& , ConfigData );
-   void findApplication ( );
-   bool getAddress ( int );
+   void findPrioApplication ( );
+   void findShortestApp ( );
+   bool getAddress ( );
 };
 #endif
