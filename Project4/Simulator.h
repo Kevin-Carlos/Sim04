@@ -28,6 +28,8 @@
 #define FIFO 0
 #define PS 1
 #define SJF 2
+#define RR 3
+#define STR 4
 
 class Simulator
 {
@@ -50,7 +52,10 @@ public:
             newProcessCount = 0 ,
             shortProcessCount = 100 ,
             appCount = 0 ,
-            count = 0;
+            taskCount = 0 ,
+            count = 0 ,
+            processComplete ,
+            quantum;
 
    std::string processType;
 
@@ -67,7 +72,9 @@ public:
    void setMemoryBlockSize ( MetaData& , ConfigData );
    void setMaxMemory ( MetaData& , ConfigData );
    void setQuantities ( MetaData& , ConfigData );
+   void setQuantum ( MetaData& , ConfigData );
    void getFileAndMethod ( MetaData& , ConfigData );
+   bool findApplication ( );
    void findPrioApplication ( );
    void findShortestApp ( );
    bool getAddress ( );

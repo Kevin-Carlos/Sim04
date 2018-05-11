@@ -30,12 +30,16 @@
 using namespace std;
 
 struct Data {
+   bool     visited;
+   bool     pidVisit;
+
    char     code;
 
    string   key;
 
    int      configTime ,
-            metaTime;
+            metaTime ,
+            pid;
 
    long     processTime;
 };
@@ -55,8 +59,10 @@ public:
    // Process state using the predefined START, Ready, Running, etc for ints
    void setProcessState ( int );
    int getProcessState ( );
+   void setAlg ( int );
 
    vector<Data> dataVec;
+   vector<Data> jobVec;
    vector<Data>::iterator processIndex;
    vector<Data>::iterator jobIndex;
    vector<Data>::iterator endIndex;
@@ -68,6 +74,9 @@ public:
 
 private:
    int processState;
+   int pid;
+   int whichTimeUse;
+   long time;
 };
 
 #endif

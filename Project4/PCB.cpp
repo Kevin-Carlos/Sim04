@@ -63,8 +63,21 @@ void PCB::HDDHandler ( )
    sem_wait ( &HDDSem );
 
    //Start timer
-   long time;
-   time = jobIndex->processTime;
+   switch ( whichTimeUse )
+   {
+   case 3:
+      time = 50; //50 = Quantum
+      break;
+
+   case 4:
+      time = 100; //STR = 100
+      break;
+
+   default:
+      time = jobIndex->processTime;
+      break;
+   }
+
    sleep ( ( void* ) time );
 
    //Unlock semaphore
@@ -82,8 +95,21 @@ void PCB::projHandler ( )
    sem_wait ( &projSem );
 
    //Start timer
-   long time;
-   time = jobIndex->processTime;
+   switch ( whichTimeUse )
+   {
+   case 3:
+      time = 50; //50 = Quantum
+      break;
+
+   case 4:
+      time = 100; //STR = 100
+      break;
+
+   default:
+      time = jobIndex->processTime;
+      break;
+   }
+
    sleep ( ( void* ) time );
 
    //Unlock semaphore
@@ -100,8 +126,20 @@ void PCB::projHandler ( )
 void PCB::genHandler ( )
 {
    //Set the time
-   long time;
-   time = jobIndex->processTime;
+   switch ( whichTimeUse )
+   {
+   case 3:
+      time = 50; //50 = Quantum
+      break;
+
+   case 4:
+      time = 100; //STR = 100
+      break;
+
+   default:
+      time = jobIndex->processTime;
+      break;
+   }
    //std::cout << "Time: " << time << std::endl;
 
    sleep ( ( void* ) time );
@@ -120,8 +158,20 @@ void PCB::IOHandler ( )
    pthread_t IOthread;
 
    //Set the time
-   long time;
-   time = jobIndex->processTime;
+   switch ( whichTimeUse )
+   {
+   case 3:
+      time = 50; //50 = Quantum
+      break;
+
+   case 4:
+      time = 100; //STR = 100
+      break;
+
+   default:
+      time = jobIndex->processTime;
+      break;
+   }
 
    //Start the thread 
    pthread_create (
@@ -133,6 +183,10 @@ void PCB::IOHandler ( )
    pthread_join ( IOthread , NULL );
 }
 
+void PCB::setAlg ( int timeAlg )
+{
+   whichTimeUse = timeAlg;
+}
 
 void PCB::setProcessState ( int newState )
 {

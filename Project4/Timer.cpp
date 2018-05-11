@@ -17,6 +17,12 @@
 #include "Timer.h"
 #include <iostream>
 
+//Start the timer
+void Timer::initTimer ( )
+{
+   start ( );
+}
+
 /**
 * @function start
 *

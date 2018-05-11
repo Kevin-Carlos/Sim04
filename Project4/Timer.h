@@ -22,6 +22,7 @@ class Timer
 {
 public:
    //Methods
+   void initTimer ( );
    void start ( );
    void stop ( );
    long double elapsedSec ( );
